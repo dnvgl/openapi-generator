@@ -4,45 +4,44 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
-using {{packageName}}.{{apiPackage}};{{#hasImport}}
+{{#hasImport}}
 using {{packageName}}.{{modelPackage}};{{/hasImport}}
-
+using {{packageName}}.Interfaces;
 
 {{>testInstructions}}
 
 
-namespace {{packageName}}.Test.{{apiPackage}}
+namespace {{packageName}}.Test.Interfaces
 {
     /// <summary>
-    ///  Class for testing {{classname}}
+    ///  Class for testing {{baseName}}
     /// </summary>
-    public sealed class {{classname}}Tests : ApiTestsBase
+    public sealed class {{baseName}}Tests : ApiTestsBase
     {
-        private readonly {{interfacePrefix}}{{classname}} _instance;
+        private readonly {{interfacePrefix}}{{baseName}} _instance;
 
-        public {{classname}}Tests(): base(Array.Empty<string>())
+        public {{baseName}}Tests(): base(Array.Empty<string>())
         {
-            _instance = _host.Services.GetRequiredService<{{interfacePrefix}}{{classname}}>();
+            _instance = _host.Services.GetRequiredService<{{interfacePrefix}}{{baseName}}>();
         }
         {{#operations}}
         {{#operation}}
 
         /// <summary>
-        /// Test {{operationId}}
+        /// Test {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}
         /// </summary>
         [Fact (Skip = "not implemented")]
-        public async Task {{operationId}}AsyncTest()
+        public async Task {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}AsyncTest()
         {
             {{#allParams}}
-            {{^required}}Client.Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}} = default{{nrt!}};
+            {{{dataType}}}{{>NullConditionalParameter}} {{paramName}} = default{{nrt!}};
             {{/allParams}}
             {{#returnType}}
-            var response = await _instance.{{operationId}}Async({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
-            var model = response.{{#lambda.first}}{{#responses}}{{vendorExtensions.x-http-status}}  {{/responses}}{{/lambda.first}}();
-            Assert.IsType<{{{.}}}>(model);
+            var response = await _instance.{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+            Assert.IsType<{{{.}}}>(response);
             {{/returnType}}
             {{^returnType}}
-            await _instance.{{operationId}}Async({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+            await _instance.{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
             {{/returnType}}
         }
         {{/operation}}

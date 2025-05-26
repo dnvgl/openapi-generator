@@ -20,10 +20,10 @@ namespace {{packageName}}.Extensions
         /// Add the api to your host builder.
         /// </summary>
         /// <param name="services"></param>
-        public static void Add{{apiName}}(this IServiceCollection services)
+        public static void Add{{clientName}}(this IServiceCollection services)
         {
             HostConfiguration config = new{{^net70OrLater}} HostConfiguration{{/net70OrLater}}(services);
-            Add{{apiName}}(services, config);
+            Add{{clientName}}(services, config);
         }
 
         {{/hasAuthMethods}}
@@ -32,14 +32,14 @@ namespace {{packageName}}.Extensions
         /// </summary>
         /// <param name="services"></param>
         /// <param name="options"></param>
-        public static void Add{{apiName}}(this IServiceCollection services, Action<HostConfiguration> options)
+        public static void Add{{clientName}}(this IServiceCollection services, Action<HostConfiguration> options)
         {
             HostConfiguration config = new{{^net70OrLater}} HostConfiguration{{/net70OrLater}}(services);
             options(config);
-            Add{{apiName}}(services, config);
+            Add{{clientName}}(services, config);
         }
 
-        internal static void Add{{apiName}}(IServiceCollection services, HostConfiguration host)
+        internal static void Add{{clientName}}(IServiceCollection services, HostConfiguration host)
         {
             if (!host.HttpClientsAdded)
                 host.Add{{apiName}}HttpClients();

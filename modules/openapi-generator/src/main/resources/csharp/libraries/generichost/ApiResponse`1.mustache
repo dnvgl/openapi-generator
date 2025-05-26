@@ -9,6 +9,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 {{/netStandard}}
 using System.Net;
+using System.Net.Http;
 
 namespace {{packageName}}.{{clientPackage}}
 {
@@ -167,4 +168,53 @@ namespace {{packageName}}.{{clientPackage}}
         bool Try{{.}}({{#net60OrLater}}[NotNullWhen(true)]{{/net60OrLater}}out TType{{nrt?}} result);
     }
     {{/x-http-statuses-with-return}}
+    
+    {{>visibility}} interface IHttpOperationResponse
+    {
+        HttpRequestMessage Request { get; set; }
+
+        HttpResponseMessage Response { get; set; }
+    }
+    {{>visibility}} interface IHttpOperationResponse<T> : IHttpOperationResponse
+    {
+        T Body { get; set; }
+    }
+    {{>visibility}} class HttpOperationResponse : IHttpOperationResponse, IDisposable
+    {
+        private bool _disposed;
+
+        {{>visibility}} HttpRequestMessage Request { get; set; }
+
+        {{>visibility}} HttpResponseMessage Response { get; set; }
+
+        {{>visibility}} void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                if (Request != null)
+                {
+                    Request.Dispose();
+                }
+
+                if (Response != null)
+                {
+                    Response.Dispose();
+                }
+
+                Request = null;
+                Response = null;
+            }
+        }
+    }
+    {{>visibility}} class HttpOperationResponse<T> : HttpOperationResponse, IHttpOperationResponse<T>, IHttpOperationResponse
+    {
+        {{>visibility}} T Body { get; set; }
+    }
 }

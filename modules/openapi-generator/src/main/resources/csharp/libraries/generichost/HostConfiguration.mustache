@@ -43,17 +43,7 @@ namespace {{packageName}}.{{clientPackage}}
             _jsonOptions.Converters.Add(new DateOnlyJsonConverter());
             _jsonOptions.Converters.Add(new DateOnlyNullableJsonConverter());
             {{/supportsDateOnly}}
-            {{#models}}
-            {{#model}}
-            {{#isEnum}}
-            _jsonOptions.Converters.Add(new {{datatypeWithEnum}}{{^datatypeWithEnum}}{{classname}}{{/datatypeWithEnum}}JsonConverter());
-            _jsonOptions.Converters.Add(new {{datatypeWithEnum}}{{^datatypeWithEnum}}{{classname}}{{/datatypeWithEnum}}NullableJsonConverter());
-            {{/isEnum}}
-            {{^isEnum}}
-            _jsonOptions.Converters.Add(new {{classname}}JsonConverter());
-            {{/isEnum}}
-            {{/model}}
-            {{/models}}
+
             JsonSerializerOptionsProvider jsonSerializerOptionsProvider = new{{^net60OrLater}} JsonSerializerOptionsProvider{{/net60OrLater}}(_jsonOptions);
             _services.AddSingleton(jsonSerializerOptionsProvider);
             {{#useSourceGeneration}}
@@ -66,7 +56,7 @@ namespace {{packageName}}.{{clientPackage}}
                 {{#lambda.joinLinesWithComma}}
                 {{#models}}
                 {{#model}}
-                new {{datatypeWithEnum}}{{^datatypeWithEnum}}{{classname}}{{/datatypeWithEnum}}SerializationContext(){{#-last}},{{/-last}}
+                new {{datatypeWithEnum}}{{^datatypeWithEnum}}{{baseName}}{{/datatypeWithEnum}}SerializationContext(){{#-last}},{{/-last}}
                 {{/model}}
                 {{/models}}
                 {{/lambda.joinLinesWithComma}}
@@ -79,9 +69,8 @@ namespace {{packageName}}.{{clientPackage}}
             {{/models}}
 
             {{/useSourceGeneration}}
-            _services.AddSingleton<IApiFactory, ApiFactory>();{{#apiInfo}}{{#apis}}
-            _services.AddSingleton<{{classname}}Events>();
-            _services.AddTransient<{{interfacePrefix}}{{classname}}, {{classname}}>();{{/apis}}{{/apiInfo}}
+            _services.AddSingleton<IApiFactory, ApiFactory>();
+            _services.AddTransient<{{interfacePrefix}}{{clientName}}, {{clientName}}>();
         }
 
         /// <summary>
@@ -99,8 +88,8 @@ namespace {{packageName}}.{{clientPackage}}
 
             List<IHttpClientBuilder> builders = new List<IHttpClientBuilder>();
 
-            {{#apiInfo}}{{#apis}}builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{classname}}, {{classname}}>(client));
-            {{/apis}}{{/apiInfo}}
+            builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{clientName}}, {{clientName}}>(client));
+            
             if (builder != null)
                 foreach (IHttpClientBuilder instance in builders)
                     builder(instance);
