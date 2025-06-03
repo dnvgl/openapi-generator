@@ -24,6 +24,8 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Xml;
 using {{packageName}}.{{clientPackage}};
 {{#hasImport}}
 using {{packageName}}.{{modelPackage}};
@@ -31,21 +33,17 @@ using {{packageName}}.{{modelPackage}};
 {{^netStandard}}
 using System.Diagnostics.CodeAnalysis;
 {{/netStandard}}
+using {{packageName}}.{{package}};
 
-namespace {{packageName}}.{{apiPackage}}
+namespace {{packageName}}.{{package}}
 {
     {{#operations}}
     /// <summary>
     /// Represents a collection of functions to interact with the API endpoints
     /// This class is registered as transient.
     /// </summary>
-    {{>visibility}} interface {{interfacePrefix}}{{classname}} : IApi
+    {{>visibility}} interface {{interfacePrefix}}{{baseName}} : IApi
     {
-        /// <summary>
-        /// The class containing the events
-        /// </summary>
-        {{classname}}Events Events { get; }
-
         {{#operation}}
         /// <summary>
         /// {{summary}}
@@ -55,14 +53,17 @@ namespace {{packageName}}.{{apiPackage}}
         /// </remarks>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         {{#allParams}}
-        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}{{#isDeprecated}} (deprecated){{/isDeprecated}}</param>
+        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}
+        /// <param name="customHeaders">The headers that will be added to request.</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>&gt;</returns>
-        {{#isDeprecated}}
-        [Obsolete]
-        {{/isDeprecated}}
-        Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}Async({{>OperationSignature}});
+        /// <returns><see cref="Task"/>&lt;<see cref="HttpOperationResponse{{#returnType}}&lt;{{returnType}}&gt;{{/returnType}}"/>&gt;</returns>
+        Task<HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}> {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}WithHttpMessagesAsync(
+            {{#allParams}}
+            {{{dataType}}} {{paramName}}{{^required}}{{#isNullable}} = null{{/isNullable}}{{^isNullable}} = default{{/isNullable}}{{/required}},
+            {{/allParams}}
+            Dictionary<string, IList<string>> customHeaders = null,
+            System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <summary>
         /// {{summary}}
@@ -70,113 +71,44 @@ namespace {{packageName}}.{{apiPackage}}
         /// <remarks>
         /// {{notes}}
         /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         {{#allParams}}
-        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}{{#isDeprecated}} (deprecated){{/isDeprecated}}</param>
+        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>{{nrt?}}&gt;</returns>
-        {{#isDeprecated}}
-        [Obsolete]
-        {{/isDeprecated}}
-        Task<{{interfacePrefix}}{{operationId}}ApiResponse{{nrt?}}> {{operationId}}OrDefaultAsync({{>OperationSignature}});
+        /// <returns><see cref="Task"/>{{#returnType}}&lt;<see cref="{{returnType}}"/>&gt;{{/returnType}}</returns>
+        Task{{#returnType}}<{{{returnType}}}>{{/returnType}} {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async(
+            {{#allParams}}
+            {{{dataType}}} {{paramName}}{{^required}}{{#isNullable}} = null{{/isNullable}}{{^isNullable}} = default{{/isNullable}}{{/required}},
+            {{/allParams}}
+            System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
         {{^-last}}
 
         {{/-last}}
         {{/operation}}
     }
-    {{#operation}}
-    {{^vendorExtensions.x-duplicates}}
-    {{#responses}}
-    {{#-first}}
 
-    /// <summary>
-    /// The <see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>
-    /// </summary>
-    {{>visibility}} interface {{interfacePrefix}}{{operationId}}ApiResponse : {{#lambda.joinWithComma}}{{packageName}}.{{clientPackage}}.{{interfacePrefix}}ApiResponse  {{#responses}}{{#dataType}}{{interfacePrefix}}{{vendorExtensions.x-http-status}}<{{#isModel}}{{^containerType}}{{packageName}}.{{modelPackage}}.{{/containerType}}{{/isModel}}{{{dataType}}}{{#nrt}}?{{/nrt}}{{^nrt}}{{#vendorExtensions.x-is-value-type}}?{{/vendorExtensions.x-is-value-type}}{{/nrt}}>  {{/dataType}}{{/responses}}{{/lambda.joinWithComma}}
-    {
-        {{#responses}}
-        {{#vendorExtensions.x-http-status-is-default}}
-        /// <summary>
-        /// Returns true if the response is the default response type
-        /// </summary>
-        /// <returns></returns>
-        bool Is{{vendorExtensions.x-http-status}} { get; }
-        {{/vendorExtensions.x-http-status-is-default}}
-        {{^vendorExtensions.x-http-status-is-default}}
-        /// <summary>
-        /// Returns true if the response is {{code}} {{vendorExtensions.x-http-status}}
-        /// </summary>
-        /// <returns></returns>
-        bool Is{{vendorExtensions.x-http-status}} { get; }
-        {{/vendorExtensions.x-http-status-is-default}}
-        {{^-last}}
+    {{/operations}}
+}
 
-        {{/-last}}
-        {{/responses}}
-    }
-    {{/-first}}
-    {{/responses}}
-    {{/vendorExtensions.x-duplicates}}
-    {{/operation}}
+namespace {{packageName}}
+{
+    {{#operations}}
 
     /// <summary>
     /// Represents a collection of functions to interact with the API endpoints
     /// </summary>
-    {{>visibility}} class {{classname}}Events
-    {
-        {{#lambda.trimTrailingWithNewLine}}
-        {{#operation}}
-        /// <summary>
-        /// The event raised after the server response
-        /// </summary>
-        public event EventHandler<ApiResponseEventArgs>{{nrt?}} On{{operationId}};
-
-        /// <summary>
-        /// The event raised after an error querying the server
-        /// </summary>
-        public event EventHandler<ExceptionEventArgs>{{nrt?}} OnError{{operationId}};
-
-        internal void ExecuteOn{{operationId}}({{#vendorExtensions.x-duplicates}}{{.}}{{/vendorExtensions.x-duplicates}}{{^vendorExtensions.x-duplicates}}{{classname}}{{/vendorExtensions.x-duplicates}}.{{operationId}}ApiResponse apiResponse)
-        {
-            On{{operationId}}?.Invoke(this, new ApiResponseEventArgs(apiResponse));
-        }
-
-        internal void ExecuteOnError{{operationId}}(Exception exception)
-        {
-            OnError{{operationId}}?.Invoke(this, new ExceptionEventArgs(exception));
-        }
-
-        {{/operation}}
-        {{/lambda.trimTrailingWithNewLine}}
-    }
-
-    /// <summary>
-    /// Represents a collection of functions to interact with the API endpoints
-    /// </summary>
-    {{>visibility}} sealed partial class {{classname}} : {{interfacePrefix}}{{classname}}
+    {{>visibility}} sealed partial class {{baseName}} : {{interfacePrefix}}{{baseName}}
     {
         private JsonSerializerOptions _jsonSerializerOptions;
-
-        /// <summary>
-        /// The logger factory
-        /// </summary>
-        public ILoggerFactory LoggerFactory { get; }
-
-        /// <summary>
-        /// The logger
-        /// </summary>
-        public ILogger<{{classname}}> Logger { get; }
 
         /// <summary>
         /// The HttpClient
         /// </summary>
         public HttpClient HttpClient { get; }
 
-        /// <summary>
-        /// The class containing the events
-        /// </summary>
-        public {{classname}}Events Events { get; }{{#hasApiKeyMethods}}
-
+        {{#hasApiKeyMethods}}
         /// <summary>
         /// A token provider of type <see cref="ApiKeyProvider"/>
         /// </summary>
@@ -216,10 +148,10 @@ namespace {{packageName}}.{{apiPackage}}
         {{/lambda.unique}}
         {{/net80OrLater}}
         /// <summary>
-        /// Initializes a new instance of the <see cref="{{classname}}"/> class.
+        /// Initializes a new instance of the <see cref="{{baseName}}"/> class.
         /// </summary>
         /// <returns></returns>
-        public {{classname}}(ILogger<{{classname}}> logger, ILoggerFactory loggerFactory, HttpClient httpClient, JsonSerializerOptionsProvider jsonSerializerOptionsProvider, {{classname}}Events {{#lambda.camelcase_sanitize_param}}{{classname}}Events{{/lambda.camelcase_sanitize_param}}{{#hasApiKeyMethods}},
+        public {{baseName}}(HttpClient httpClient, JsonSerializerOptions jsonSerializerOptions {{#hasApiKeyMethods}},
             TokenProvider<ApiKeyToken> apiKeyProvider{{/hasApiKeyMethods}}{{#hasHttpBearerMethods}},
             TokenProvider<BearerToken> bearerTokenProvider{{/hasHttpBearerMethods}}{{#hasHttpBasicMethods}},
             TokenProvider<BasicToken> basicTokenProvider{{/hasHttpBasicMethods}}{{#hasHttpSignatureMethods}},
@@ -227,11 +159,8 @@ namespace {{packageName}}.{{apiPackage}}
             TokenProvider<OAuthToken> oauthTokenProvider{{/hasOAuthMethods}}{{#net80OrLater}}{{#operation}}{{#lambda.uniqueLines}}{{#vendorExtensions.x-set-cookie}},
             {{packageName}}.{{clientPackage}}.CookieContainer cookieContainer{{/vendorExtensions.x-set-cookie}}{{/lambda.uniqueLines}}{{/operation}}{{/net80OrLater}})
         {
-            _jsonSerializerOptions = jsonSerializerOptionsProvider.Options;
-            LoggerFactory = loggerFactory;
-            Logger = LoggerFactory.CreateLogger<{{classname}}>();
-            HttpClient = httpClient;
-            Events = {{#lambda.camelcase_sanitize_param}}{{classname}}Events{{/lambda.camelcase_sanitize_param}};{{#hasApiKeyMethods}}
+            _jsonSerializerOptions = jsonSerializerOptions;
+            HttpClient = httpClient;{{#hasApiKeyMethods}}
             ApiKeyProvider = apiKeyProvider;{{/hasApiKeyMethods}}{{#hasHttpBearerMethods}}
             BearerTokenProvider = bearerTokenProvider;{{/hasHttpBearerMethods}}{{#hasHttpBasicMethods}}
             BasicTokenProvider = basicTokenProvider;{{/hasHttpBasicMethods}}{{#hasHttpSignatureMethods}}
@@ -243,7 +172,7 @@ namespace {{packageName}}.{{apiPackage}}
 
         {{#allParams}}
         {{#-first}}
-        partial void Format{{operationId}}({{#allParams}}{{#isPrimitiveType}}ref {{/isPrimitiveType}}{{^required}}Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+        partial void Format{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}({{#allParams}}{{#isPrimitiveType}}ref {{/isPrimitiveType}}{{{dataType}}}{{>NullConditionalParameter}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
 
         {{/-first}}
         {{/allParams}}
@@ -255,52 +184,20 @@ namespace {{packageName}}.{{apiPackage}}
         /// <param name="{{paramName}}"></param>
         {{/vendorExtensions.x-not-nullable-reference-types}}
         /// <returns></returns>
-        private void Validate{{operationId}}({{#vendorExtensions.x-not-nullable-reference-types}}{{^required}}Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-not-nullable-reference-types}})
+        private void Validate{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}({{#vendorExtensions.x-not-nullable-reference-types}}{{{dataType}}}{{>NullConditionalParameter}} {{paramName}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-not-nullable-reference-types}})
         {
             {{#lambda.trimTrailingWithNewLine}}
             {{#vendorExtensions.x-not-nullable-reference-types}}
-            {{#required}}
             {{^vendorExtensions.x-is-value-type}}
             if ({{paramName}} == null)
                 throw new ArgumentNullException(nameof({{paramName}}));
 
             {{/vendorExtensions.x-is-value-type}}
-            {{/required}}
-            {{^required}}
-            {{^vendorExtensions.x-is-value-type}}
-            if ({{paramName}}.IsSet && {{paramName}}.Value == null)
-                throw new ArgumentNullException(nameof({{paramName}}));
-
-            {{/vendorExtensions.x-is-value-type}}
-            {{/required}}
             {{/vendorExtensions.x-not-nullable-reference-types}}
             {{/lambda.trimTrailingWithNewLine}}
         }
 
         {{/vendorExtensions.x-has-not-nullable-reference-types}}
-        /// <summary>
-        /// Processes the server response
-        /// </summary>
-        /// <param name="apiResponseLocalVar"></param>
-        {{#allParams}}
-        /// <param name="{{paramName}}"></param>
-        {{/allParams}}
-        private void After{{operationId}}DefaultImplementation({{#lambda.joinWithComma}}{{interfacePrefix}}{{operationId}}ApiResponse apiResponseLocalVar  {{#allParams}}{{^required}}Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}}  {{/allParams}}{{/lambda.joinWithComma}})
-        {
-            bool suppressDefaultLog = false;
-            After{{operationId}}({{#lambda.joinWithComma}}ref suppressDefaultLog  apiResponseLocalVar  {{#allParams}}{{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
-{{>AfterOperationDefaultImplementation}}
-        }
-
-        /// <summary>
-        /// Processes the server response
-        /// </summary>
-        /// <param name="suppressDefaultLog"></param>
-        /// <param name="apiResponseLocalVar"></param>
-        {{#allParams}}
-        /// <param name="{{paramName}}"></param>
-        {{/allParams}}
-        partial void After{{operationId}}({{#lambda.joinWithComma}}ref bool suppressDefaultLog  {{interfacePrefix}}{{operationId}}ApiResponse apiResponseLocalVar  {{#allParams}}{{^required}}Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -311,11 +208,10 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}
         /// <param name="{{paramName}}"></param>
         {{/allParams}}
-        private void OnError{{operationId}}DefaultImplementation({{#lambda.joinWithComma}}Exception exceptionLocalVar  string pathFormatLocalVar  string pathLocalVar  {{#allParams}}{{^required}}Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}}  {{/allParams}}{{/lambda.joinWithComma}})
+        private void OnError{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}DefaultImplementation({{#lambda.joinWithComma}}Exception exceptionLocalVar  string pathFormatLocalVar  string pathLocalVar  {{#allParams}}{{{dataType}}}{{>NullConditionalParameter}} {{paramName}}  {{/allParams}}{{/lambda.joinWithComma}})
         {
             bool suppressDefaultLogLocalVar = false;
-            OnError{{operationId}}({{#lambda.joinWithComma}}ref suppressDefaultLogLocalVar  exceptionLocalVar  pathFormatLocalVar  pathLocalVar  {{#allParams}}{{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
-{{>OnErrorDefaultImplementation}}
+            OnError{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}({{#lambda.joinWithComma}}ref suppressDefaultLogLocalVar  exceptionLocalVar  pathFormatLocalVar  pathLocalVar  {{#allParams}}{{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
         }
 
         /// <summary>
@@ -328,38 +224,27 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}
         /// <param name="{{paramName}}"></param>
         {{/allParams}}
-        partial void OnError{{operationId}}({{#lambda.joinWithComma}}ref bool suppressDefaultLogLocalVar  Exception exceptionLocalVar  string pathFormatLocalVar  string pathLocalVar  {{#allParams}}{{^required}}Option<{{/required}}{{{dataType}}}{{>NullConditionalParameter}}{{^required}}>{{/required}} {{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
+        partial void OnError{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}({{#lambda.joinWithComma}}ref bool suppressDefaultLogLocalVar  Exception exceptionLocalVar  string pathFormatLocalVar  string pathLocalVar  {{#allParams}}{{{dataType}}}{{>NullConditionalParameter}} {{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
 
         /// <summary>
-        /// {{summary}} {{notes}}
+        /// {{summary}}
         /// </summary>
-        {{#allParams}}
-        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
-        {{/allParams}}
-        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>&gt;</returns>
-        public async Task<{{interfacePrefix}}{{operationId}}ApiResponse{{nrt?}}> {{operationId}}OrDefaultAsync({{>OperationSignature}})
-        {
-            try
-            {
-                return await {{operationId}}Async({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}}{{#allParams.0}}, {{/allParams.0}}cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// {{summary}} {{notes}}
-        /// </summary>
+        /// <remarks>
+        /// {{notes}}
+        /// </remarks>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         {{#allParams}}
         /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}
+        /// <param name="customHeaders">The headers that will be added to request.</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>&gt;</returns>
-        public async Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}Async({{>OperationSignature}})
+        /// <returns><see cref="Task"/>&lt;<see cref="HttpOperationResponse{{#returnType}}&lt;{{returnType}}&gt;{{/returnType}}"/>&gt;</returns>
+        public async Task<HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}> {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}WithHttpMessagesAsync(
+            {{#allParams}}
+            {{{dataType}}} {{paramName}}{{^required}}{{#isNullable}} = null{{/isNullable}}{{^isNullable}} = default{{/isNullable}}{{/required}},
+            {{/allParams}}
+            Dictionary<string, IList<string>> customHeaders = null,
+            System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             {{#lambda.trimLineBreaks}}
             UriBuilder uriBuilderLocalVar = new UriBuilder();
@@ -367,12 +252,12 @@ namespace {{packageName}}.{{apiPackage}}
             try
             {
                 {{#vendorExtensions.x-has-not-nullable-reference-types}}
-                Validate{{operationId}}({{#vendorExtensions.x-not-nullable-reference-types}}{{paramName}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-not-nullable-reference-types}});
+                //Validate{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}({{#vendorExtensions.x-not-nullable-reference-types}}{{paramName}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-not-nullable-reference-types}});
 
                 {{/vendorExtensions.x-has-not-nullable-reference-types}}
                 {{#allParams}}
                 {{#-first}}
-                Format{{operationId}}({{#allParams}}{{#isPrimitiveType}}ref {{/isPrimitiveType}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+                Format{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}({{#allParams}}{{#isPrimitiveType}}ref {{/isPrimitiveType}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
 
                 {{/-first}}
                 {{/allParams}}
@@ -427,8 +312,8 @@ namespace {{packageName}}.{{apiPackage}}
                     {{#-first}}
 
                     {{/-first}}
-                    parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}});
                     {{/required}}
+                    parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}});
                     {{/queryParams}}
 
                     {{#constantParams}}
@@ -438,11 +323,7 @@ namespace {{packageName}}.{{apiPackage}}
                     {{/isQueryParam}}
                     {{/constantParams}}
                     {{#queryParams}}
-                    {{^required}}
-                    if ({{paramName}}.IsSet)
-                        parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}}.Value);
 
-                    {{/required}}
                     {{#-last}}
                     uriBuilderLocalVar.Query = parseQueryStringLocalVar.ToString();
 
@@ -455,16 +336,20 @@ namespace {{packageName}}.{{apiPackage}}
                     {{/isHeaderParam}}
                     {{/constantParams}}
                     {{#headerParams}}
-                    {{#required}}
-                    httpRequestMessageLocalVar.Headers.Add("{{baseName}}", ClientUtils.ParameterToString({{paramName}}));
+                    if ({{paramName}} != null)
+                        httpRequestMessageLocalVar.Headers.Add("{{baseName}}", ClientUtils.ParameterToString({{paramName}}));
 
-                    {{/required}}
-                    {{^required}}
-                    if ({{paramName}}.IsSet)
-                        httpRequestMessageLocalVar.Headers.Add("{{baseName}}", ClientUtils.ParameterToString({{paramName}}.Value));
-
-                    {{/required}}
                     {{/headerParams}}
+
+                    // Add custom headers
+                    if (customHeaders != null)
+                    {
+                        foreach (var header in customHeaders)
+                        {
+                            httpRequestMessageLocalVar.Headers.Add(header.Key, header.Value);
+                        }
+                    }
+
                     {{#formParams}}
                     {{#-first}}
                     MultipartContent multipartContentLocalVar = new MultipartContent();
@@ -473,41 +358,20 @@ namespace {{packageName}}.{{apiPackage}}
 
                     List<KeyValuePair<string{{nrt?}}, string{{nrt?}}>> formParameterLocalVars = new List<KeyValuePair<string{{nrt?}}, string{{nrt?}}>>();
 
-                    multipartContentLocalVar.Add(new FormUrlEncodedContent(formParameterLocalVars));{{/-first}}{{^isFile}}{{#required}}
+                    multipartContentLocalVar.Add(new FormUrlEncodedContent(formParameterLocalVars));{{/-first}}{{^isFile}}
 
                     formParameterLocalVars.Add(new KeyValuePair<string{{nrt?}}, string{{nrt?}}>("{{baseName}}", ClientUtils.ParameterToString({{paramName}})));
 
-                    {{/required}}
-                    {{^required}}
-                    if ({{paramName}}.IsSet)
-                        formParameterLocalVars.Add(new KeyValuePair<string{{nrt?}}, string{{nrt?}}>("{{baseName}}", ClientUtils.ParameterToString({{paramName}}.Value)));
-
-                    {{/required}}
                     {{/isFile}}
                     {{#isFile}}
-                    {{#required}}
                     multipartContentLocalVar.Add(new StreamContent({{paramName}}));
 
-                    {{/required}}
-                    {{^required}}
-                    if ({{paramName}}.IsSet)
-                        multipartContentLocalVar.Add(new StreamContent({{paramName}}.Value));
-
-                    {{/required}}
                     {{/isFile}}
                     {{/formParams}}
                     {{#bodyParam}}
-                    {{#required}}
-                    httpRequestMessageLocalVar.Content = ({{paramName}}{{^required}}.Value{{/required}} as object) is System.IO.Stream stream
+                    httpRequestMessageLocalVar.Content = ({{paramName}} as object) is System.IO.Stream stream
                         ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
-                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize({{paramName}}{{^required}}.Value{{/required}}, _jsonSerializerOptions));
-                    {{/required}}
-                    {{^required}}
-                    if ({{paramName}}.IsSet)
-                        httpRequestMessageLocalVar.Content = ({{paramName}}{{^required}}.Value{{/required}} as object) is System.IO.Stream stream
-                            ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
-                            : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize({{paramName}}{{^required}}.Value{{/required}}, _jsonSerializerOptions));
-                    {{/required}}
+                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize({{paramName}}, _jsonSerializerOptions));
 
                     {{/bodyParam}}
                     {{#authMethods}}
@@ -621,15 +485,14 @@ namespace {{packageName}}.{{apiPackage}}
 
                     using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
                     {
-                        string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync({{#net60OrLater}}cancellationToken{{/net60OrLater}}).ConfigureAwait(false);
-
-                        ILogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse>();
-
-                        {{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse apiResponseLocalVar = new{{^net60OrLater}} {{operationId}}ApiResponse{{/net60OrLater}}(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "{{{path}}}", requestedAtLocalVar, _jsonSerializerOptions);
-
-                        After{{operationId}}DefaultImplementation({{#lambda.joinWithComma}}apiResponseLocalVar  {{#allParams}}{{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
-
-                        Events.ExecuteOn{{operationId}}(apiResponseLocalVar);
+                        string responseContentLocalVar = string.Empty;
+                        if (httpResponseMessageLocalVar.Content != null) {
+                            responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync({{#net60OrLater}}cancellationToken{{/net60OrLater}}).ConfigureAwait(false);
+                        }
+                        if (!httpResponseMessageLocalVar.IsSuccessStatusCode)
+                        {
+                            throw new HttpOperationException(httpRequestMessageLocalVar, httpResponseMessageLocalVar, string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode));                      
+                        }
 
                         {{#authMethods}}
                         {{#-first}}
@@ -672,132 +535,55 @@ namespace {{packageName}}.{{apiPackage}}
                         {{/vendorExtensions.x-set-cookie}}
                         {{/responses}}
                         {{/net80OrLater}}
-                        return apiResponseLocalVar;
+                        return new HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}
+                        {
+                            {{#returnType}}Body = JsonSerializer.Deserialize<{{{returnType}}}>(responseContentLocalVar, _jsonSerializerOptions),{{/returnType}}
+                            Request = httpRequestMessageLocalVar,
+                            Response = httpResponseMessageLocalVar
+                        };
                     }
                 }
             }
             catch(Exception e)
             {
-                OnError{{operationId}}DefaultImplementation({{#lambda.joinWithComma}}e  "{{{path}}}"  uriBuilderLocalVar.Path  {{#allParams}}{{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
-                Events.ExecuteOnError{{operationId}}(e);
+                OnError{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}DefaultImplementation({{#lambda.joinWithComma}}e  "{{{path}}}"  uriBuilderLocalVar.Path  {{#allParams}}{{paramName}}  {{/allParams}}{{/lambda.joinWithComma}});
                 throw;
             }
             {{/lambda.trimLineBreaks}}
         }
-        {{^vendorExtensions.x-duplicates}}
-        {{#responses}}
-        {{#-first}}
-
+                
         /// <summary>
-        /// The <see cref="{{operationId}}ApiResponse"/>
+        /// {{summary}}
         /// </summary>
-        {{>visibility}} partial class {{operationId}}ApiResponse : {{packageName}}.{{clientPackage}}.ApiResponse, {{interfacePrefix}}{{operationId}}ApiResponse
+        /// <remarks>
+        /// {{notes}}
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        {{#allParams}}
+        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
+        {{/allParams}}
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>{{#returnType}}&lt;<see cref="{{returnType}}"/>&gt;{{/returnType}}</returns>
+        public async Task{{#returnType}}<{{{returnType}}}>{{/returnType}} {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async(
+            {{#allParams}}
+            {{{dataType}}} {{paramName}}{{^required}}{{#isNullable}} = null{{/isNullable}}{{^isNullable}} = default{{/isNullable}}{{/required}},
+            {{/allParams}}
+            System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
-            /// <summary>
-            /// The logger
-            /// </summary>
-            public ILogger<{{operationId}}ApiResponse> Logger { get; }
+            // Call the WithHttpMessagesAsync method
+            {{#returnType}}var httpOperationResponse = {{/returnType}}await {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}WithHttpMessagesAsync(
+                {{#allParams}}
+                {{paramName}},
+                {{/allParams}}
+                null, // customHeaders
+                cancellationToken).ConfigureAwait(false);
 
-            /// <summary>
-            /// The <see cref="{{operationId}}ApiResponse"/>
-            /// </summary>
-            /// <param name="logger"></param>
-            /// <param name="httpRequestMessage"></param>
-            /// <param name="httpResponseMessage"></param>
-            /// <param name="rawContent"></param>
-            /// <param name="path"></param>
-            /// <param name="requestedAt"></param>
-            /// <param name="jsonSerializerOptions"></param>
-            public {{operationId}}ApiResponse(ILogger<{{operationId}}ApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
-            {
-                Logger = logger;
-                OnCreated(httpRequestMessage, httpResponseMessage);
-            }
-
-            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
-            {{#responses}}
-
-            {{#vendorExtensions.x-http-status-is-default}}
-            /// <summary>
-            /// Returns true if the response is the default response type
-            /// </summary>
-            /// <returns></returns>
-            public bool Is{{vendorExtensions.x-http-status}} => {{#vendorExtensions.x-only-default}}true{{/vendorExtensions.x-only-default}}{{^vendorExtensions.x-only-default}}{{#lambda.joinConditions}}{{#responses}}{{^vendorExtensions.x-http-status-is-default}}!Is{{vendorExtensions.x-http-status}}  {{/vendorExtensions.x-http-status-is-default}}{{/responses}}{{/lambda.joinConditions}}{{/vendorExtensions.x-only-default}};
-            {{/vendorExtensions.x-http-status-is-default}}
-            {{^vendorExtensions.x-http-status-is-default}}
-            /// <summary>
-            /// Returns true if the response is {{code}} {{vendorExtensions.x-http-status}}
-            /// </summary>
-            /// <returns></returns>
-            {{#vendorExtensions.x-http-status-range}}
-            public bool Is{{vendorExtensions.x-http-status}}
-            {
-                get
-                {
-                    int statusCode = (int)StatusCode;
-                    return {{vendorExtensions.x-http-status-range}}00 >= statusCode && {{vendorExtensions.x-http-status-range}}99 <= statusCode;
-                }
-            }
-            {{/vendorExtensions.x-http-status-range}}
-            {{^vendorExtensions.x-http-status-range}}
-            public bool Is{{vendorExtensions.x-http-status}} => {{code}} == (int)StatusCode;
-            {{/vendorExtensions.x-http-status-range}}
-            {{/vendorExtensions.x-http-status-is-default}}
-            {{#dataType}}
-
-            /// <summary>
-            /// Deserializes the response if the response is {{code}} {{vendorExtensions.x-http-status}}
-            /// </summary>
-            /// <returns></returns>
-            public {{#isModel}}{{^containerType}}{{packageName}}.{{modelPackage}}.{{/containerType}}{{/isModel}}{{{dataType}}}{{#nrt}}?{{/nrt}}{{^nrt}}{{#vendorExtensions.x-is-value-type}}?{{/vendorExtensions.x-is-value-type}}{{/nrt}} {{vendorExtensions.x-http-status}}()
-            {
-                {{#lambda.trimTrailingWithNewLine}}
-                {{#lambda.indent4}}
-                {{>AsModel}}
-                {{/lambda.indent4}}
-                {{/lambda.trimTrailingWithNewLine}}
-            }
-
-            /// <summary>
-            /// Returns true if the response is {{code}} {{vendorExtensions.x-http-status}} and the deserialized response is not null
-            /// </summary>
-            /// <param name="result"></param>
-            /// <returns></returns>
-            public bool Try{{vendorExtensions.x-http-status}}({{#net60OrLater}}[NotNullWhen(true)]{{/net60OrLater}}out {{#isModel}}{{^containerType}}{{packageName}}.{{modelPackage}}.{{/containerType}}{{/isModel}}{{{dataType}}}{{#nrt}}?{{/nrt}}{{^nrt}}{{#vendorExtensions.x-is-value-type}}?{{/vendorExtensions.x-is-value-type}}{{/nrt}} result)
-            {
-                result = null;
-
-                try
-                {
-                    result = {{vendorExtensions.x-http-status}}();
-                } catch (Exception e)
-                {
-                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode){{#vendorExtensions.x-http-status-range}}{{.}}{{/vendorExtensions.x-http-status-range}}{{^vendorExtensions.x-http-status-range}}{{code}}{{/vendorExtensions.x-http-status-range}});
-                }
-
-                return result != null;
-            }
-            {{/dataType}}
-            {{#-last}}
-
-            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
-            {
-                bool suppressDefaultLog = false;
-                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
-                {{#lambda.trimTrailingWithNewLine}}
-                {{#lambda.indent4}}
-                {{>OnDeserializationError}}
-                {{/lambda.indent4}}
-                {{/lambda.trimTrailingWithNewLine}}
-            }
-
-            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
-            {{/-last}}
-            {{/responses}}
+            {{#returnType}}
+            // Return the deserialized body
+            return httpOperationResponse.Body;
+            {{/returnType}}
         }
-        {{/-first}}
-        {{/responses}}
-        {{/vendorExtensions.x-duplicates}}
+
         {{/operation}}
     }
     {{/operations}}
