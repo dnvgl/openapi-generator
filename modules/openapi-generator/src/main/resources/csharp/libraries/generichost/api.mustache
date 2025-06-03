@@ -151,7 +151,7 @@ namespace {{packageName}}
         /// Initializes a new instance of the <see cref="{{baseName}}"/> class.
         /// </summary>
         /// <returns></returns>
-        public {{baseName}}(HttpClient httpClient, JsonSerializerOptionsProvider jsonSerializerOptionsProvider {{#hasApiKeyMethods}},
+        public {{baseName}}(HttpClient httpClient, JsonSerializerOptions jsonSerializerOptions {{#hasApiKeyMethods}},
             TokenProvider<ApiKeyToken> apiKeyProvider{{/hasApiKeyMethods}}{{#hasHttpBearerMethods}},
             TokenProvider<BearerToken> bearerTokenProvider{{/hasHttpBearerMethods}}{{#hasHttpBasicMethods}},
             TokenProvider<BasicToken> basicTokenProvider{{/hasHttpBasicMethods}}{{#hasHttpSignatureMethods}},
@@ -159,7 +159,7 @@ namespace {{packageName}}
             TokenProvider<OAuthToken> oauthTokenProvider{{/hasOAuthMethods}}{{#net80OrLater}}{{#operation}}{{#lambda.uniqueLines}}{{#vendorExtensions.x-set-cookie}},
             {{packageName}}.{{clientPackage}}.CookieContainer cookieContainer{{/vendorExtensions.x-set-cookie}}{{/lambda.uniqueLines}}{{/operation}}{{/net80OrLater}})
         {
-            _jsonSerializerOptions = jsonSerializerOptionsProvider.Options;
+            _jsonSerializerOptions = jsonSerializerOptions;
             HttpClient = httpClient;{{#hasApiKeyMethods}}
             ApiKeyProvider = apiKeyProvider;{{/hasApiKeyMethods}}{{#hasHttpBearerMethods}}
             BearerTokenProvider = bearerTokenProvider;{{/hasHttpBearerMethods}}{{#hasHttpBasicMethods}}

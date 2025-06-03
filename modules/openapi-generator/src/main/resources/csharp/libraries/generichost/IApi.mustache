@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Text.Json;
 using {{packageName}}.{{clientPackage}};
 using {{packageName}}.{{apiPackage}};
 
@@ -19,7 +20,7 @@ namespace {{packageName}}.{{apiPackage}}
     /// </summary>
     public partial interface {{interfacePrefix}}{{clientName}}
     {
-		JsonSerializerOptionsProvider JsonSerializerOptionsProvider { get; }
+		JsonSerializerOptions JsonSerializerOptions { get; }
 
 {{#apiInfo.apis}}
         {{interfacePrefix}}{{baseName}} {{baseName}} { get; }
@@ -33,18 +34,18 @@ namespace {{packageName}}
     public class {{clientName}} : {{interfacePrefix}}{{clientName}}
     {
         public HttpClient HttpClient { get; }
-		public JsonSerializerOptionsProvider JsonSerializerOptionsProvider { get; private set; }
+		public JsonSerializerOptions JsonSerializerOptions { get; private set; }
 {{#apiInfo.apis}}
         {{>visibility}} virtual {{interfacePrefix}}{{baseName}} {{baseName}} { get; private set; }
 {{/apiInfo.apis}}
 
         public {{clientName}}(
-            HttpClient httpClient, JsonSerializerOptionsProvider jsonSerializerOptionsProvider) 
+            HttpClient httpClient, JsonSerializerOptions jsonSerializerOptions) 
         {
             HttpClient = httpClient;
-			JsonSerializerOptionsProvider = jsonSerializerOptionsProvider;
+			JsonSerializerOptions = jsonSerializerOptions;
 {{#apiInfo.apis}}
-            {{baseName}} = new {{baseName}}(httpClient, jsonSerializerOptionsProvider);
+            {{baseName}} = new {{baseName}}(httpClient, jsonSerializerOptions);
 {{/apiInfo.apis}}
         }
 
