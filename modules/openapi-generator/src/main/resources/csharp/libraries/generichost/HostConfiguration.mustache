@@ -16,6 +16,7 @@ using {{packageName}}.{{apiPackage}};
 using {{packageName}}.{{modelPackage}};
 {{/-first}}
 {{/models}}
+using System.Text.Json.Serialization.Metadata;
 
 namespace {{packageName}}.{{clientPackage}}
 {
@@ -43,10 +44,12 @@ namespace {{packageName}}.{{clientPackage}}
             _jsonOptions.Converters.Add(new DateOnlyJsonConverter());
             _jsonOptions.Converters.Add(new DateOnlyNullableJsonConverter());
             {{/supportsDateOnly}}
+            _jsonOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
 
             JsonSerializerOptionsProvider jsonSerializerOptionsProvider = new{{^net60OrLater}} JsonSerializerOptionsProvider{{/net60OrLater}}(_jsonOptions);
             _services.AddSingleton(jsonSerializerOptionsProvider);
-            {{#useSourceGeneration}}
+            _services.AddSingleton(jsonSerializerOptionsProvider.Options);
+           {{#useSourceGeneration}}
 
             {{#models}}
             {{#-first}}
