@@ -1,3 +1,13 @@
+    [JsonSerializable(typeof({{classname}}))]
+    internal partial class {{classname}}Context : JsonSerializerContext
+    {
+    }
+    [JsonSerializable(typeof(IEnumerable<{{classname}}>))]
+    internal partial class IEnumerable{{classname}}Context : JsonSerializerContext
+    {
+
+    }
+
     /// <summary>
     /// {{description}}{{^description}}{{classname}}{{/description}}
     /// </summary>
@@ -47,6 +57,13 @@
 
         {{/vendorExtensions.x-duplicated-data-type}}
         {{/composedSchemas.oneOf}}
+        static {{classname}}()
+        {
+            GlobalContext.ContextMapper.Add(typeof({{classname}}), {{classname}}Context.Default);
+            GlobalContext.ContextMapper.Add(typeof(IEnumerable<{{classname}}>), IEnumerable{{classname}}Context.Default);
+        }
+        public static bool ClassInit = false;
+
         {{^composedSchemas.oneOf}}
         /// <summary>
         /// Initializes a new instance of the <see cref="{{classname}}" /> class.

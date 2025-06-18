@@ -535,6 +535,10 @@ namespace {{packageName}}
                         {{/vendorExtensions.x-set-cookie}}
                         {{/responses}}
                         {{/net80OrLater}}
+                        {{#returnType}}{{^returnTypeIsPrimitive}}
+                        {{returnBaseType}}.ClassInit = true;
+                        _jsonSerializerOptions.TypeInfoResolver = GlobalContext.ContextMapper[typeof({{{returnType}}})];
+                        {{/returnTypeIsPrimitive}}{{/returnType}}
                         return new HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}
                         {
                             {{#returnType}}Body = JsonSerializer.Deserialize<{{{returnType}}}>(responseContentLocalVar, _jsonSerializerOptions),{{/returnType}}

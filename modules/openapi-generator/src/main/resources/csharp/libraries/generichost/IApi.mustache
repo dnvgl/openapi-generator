@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using {{packageName}}.{{clientPackage}};
 using {{packageName}}.{{apiPackage}};
 
@@ -49,5 +52,18 @@ namespace {{packageName}}
 {{/apiInfo.apis}}
         }
 
+    }
+}
+namespace {{packageName}}.Models
+{
+    /// <summary>
+    /// 
+    /// </summary>
+    public static class GlobalContext
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public static Dictionary<Type, JsonSerializerContext> ContextMapper = new Dictionary<Type, JsonSerializerContext>();
     }
 }
