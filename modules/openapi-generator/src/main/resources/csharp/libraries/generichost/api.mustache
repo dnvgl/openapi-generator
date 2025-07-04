@@ -307,19 +307,39 @@ namespace {{packageName}}
                     {{/isApiKey}}
                     {{/authMethods}}
                     {{/queryParams}}
+                    string paramValue = "";
                     {{#queryParams}}
                     {{#required}}
                     {{#-first}}
 
                     {{/-first}}
                     {{/required}}
-                    parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}});
+                    {{#isArray}}
+                    foreach (var item in {{paramName}})
+                    {
+                        var value = ClientUtils.ParameterToString(item);
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            parseQueryStringLocalVar["{{baseName}}"] = value;
+                        }
+                    }
+                    {{/isArray}}
+                    {{^isArray}}
+                    paramValue = ClientUtils.ParameterToString({{paramName}});
+                    if (!string.IsNullOrEmpty(paramValue))
+                    {
+                        parseQueryStringLocalVar["{{baseName}}"] = paramValue;
+                    }
+                    {{/isArray}}
                     {{/queryParams}}
-
                     {{#constantParams}}
                     {{#isQueryParam}}
                     // Set client side default value of Query Param "{{baseName}}".
-                    parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{#_enum}}"{{{.}}}"{{/_enum}}); // Constant query parameter
+                    paramValue = ClientUtils.ParameterToString({{#_enum}}"{{{.}}}"{{/_enum}}); // Constant query parameter
+                    if (!string.IsNullOrEmpty(paramValue))
+                    {
+                        parseQueryStringLocalVar["{{baseName}}"] = paramValue;
+                    }
                     {{/isQueryParam}}
                     {{/constantParams}}
                     {{#queryParams}}
@@ -535,13 +555,15 @@ namespace {{packageName}}
                         {{/vendorExtensions.x-set-cookie}}
                         {{/responses}}
                         {{/net80OrLater}}
-                        {{#returnType}}{{^returnTypeIsPrimitive}}
+
+                        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions(_jsonSerializerOptions);
+                        {{#returnType}}{{^returnTypeIsPrimitive}}{{^returnProperty.mostInnerItems.isEnumRef}}
                         {{returnBaseType}}.ClassInit = true;
-                        _jsonSerializerOptions.TypeInfoResolver = GlobalContext.ContextMapper[typeof({{{returnType}}})];
-                        {{/returnTypeIsPrimitive}}{{/returnType}}
+                        jsonSerializerOptions.TypeInfoResolver = GlobalContext.ContextMapper[typeof({{{returnType}}})];
+                        {{/returnProperty.mostInnerItems.isEnumRef}}{{/returnTypeIsPrimitive}}{{/returnType}}
                         return new HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}
                         {
-                            {{#returnType}}Body = JsonSerializer.Deserialize<{{{returnType}}}>(responseContentLocalVar, _jsonSerializerOptions),{{/returnType}}
+                            {{#returnType}}Body = JsonSerializer.Deserialize<{{{returnType}}}>(responseContentLocalVar, jsonSerializerOptions),{{/returnType}}
                             Request = httpRequestMessageLocalVar,
                             Response = httpResponseMessageLocalVar
                         };
