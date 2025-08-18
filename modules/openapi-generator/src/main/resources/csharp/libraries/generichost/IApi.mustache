@@ -43,12 +43,24 @@ namespace {{packageName}}
 {{/apiInfo.apis}}
 
         public {{clientName}}(
-            HttpClient httpClient, JsonSerializerOptions jsonSerializerOptions) 
+            HttpClient httpClient, JsonSerializerOptions? jsonSerializerOptions = null) 
         {
             HttpClient = httpClient;
-			JsonSerializerOptions = jsonSerializerOptions;
+            if (jsonSerializerOptions != null)
+            {
+                JsonSerializerOptions = jsonSerializerOptions;
+            }
+            else
+            {
+                JsonSerializerOptions = new JsonSerializerOptions();
+                JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter());
+                JsonSerializerOptions.Converters.Add(new DateTimeNullableJsonConverter());
+                JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+                JsonSerializerOptions.Converters.Add(new DateOnlyNullableJsonConverter());
+            }
 {{#apiInfo.apis}}
-            {{baseName}} = new {{baseName}}(httpClient, jsonSerializerOptions);
+            {{baseName}} = new {{baseName}}(httpClient, JsonSerializerOptions);
 {{/apiInfo.apis}}
         }
 
