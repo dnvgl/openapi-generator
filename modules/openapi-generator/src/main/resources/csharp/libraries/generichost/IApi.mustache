@@ -1,4 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using {{packageName}}.{{clientPackage}};
+using {{packageName}}.{{apiPackage}};
 
 namespace {{packageName}}.{{apiPackage}}
 {
@@ -11,5 +17,65 @@ namespace {{packageName}}.{{apiPackage}}
         /// The HttpClient
         /// </summary>
         HttpClient HttpClient { get; }
+    }
+
+    /// <summary>
+    /// </summary>
+    public partial interface {{interfacePrefix}}{{clientName}}
+    {
+		JsonSerializerOptions JsonSerializerOptions { get; }
+
+{{#apiInfo.apis}}
+        {{interfacePrefix}}{{baseName}} {{baseName}} { get; }
+{{/apiInfo.apis}}
+
+    }
+}
+
+namespace {{packageName}}
+{
+    public class {{clientName}} : {{interfacePrefix}}{{clientName}}
+    {
+        public HttpClient HttpClient { get; }
+		public JsonSerializerOptions JsonSerializerOptions { get; private set; }
+{{#apiInfo.apis}}
+        {{>visibility}} virtual {{interfacePrefix}}{{baseName}} {{baseName}} { get; private set; }
+{{/apiInfo.apis}}
+
+        public {{clientName}}(
+            HttpClient httpClient, JsonSerializerOptions? jsonSerializerOptions = null) 
+        {
+            HttpClient = httpClient;
+            if (jsonSerializerOptions != null)
+            {
+                JsonSerializerOptions = jsonSerializerOptions;
+            }
+            else
+            {
+                JsonSerializerOptions = new JsonSerializerOptions();
+                JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                JsonSerializerOptions.Converters.Add(new DateTimeJsonConverter());
+                JsonSerializerOptions.Converters.Add(new DateTimeNullableJsonConverter());
+                JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+                JsonSerializerOptions.Converters.Add(new DateOnlyNullableJsonConverter());
+            }
+{{#apiInfo.apis}}
+            {{baseName}} = new {{baseName}}(httpClient, JsonSerializerOptions);
+{{/apiInfo.apis}}
+        }
+
+    }
+}
+namespace {{packageName}}.Models
+{
+    /// <summary>
+    /// 
+    /// </summary>
+    public static class GlobalContext
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public static Dictionary<Type, JsonSerializerContext> ContextMapper = new Dictionary<Type, JsonSerializerContext>();
     }
 }
