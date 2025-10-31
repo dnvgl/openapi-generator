@@ -16,6 +16,7 @@ using {{packageName}}.{{apiPackage}};
 using {{packageName}}.{{modelPackage}};
 {{/-first}}
 {{/models}}
+using System.Text.Json.Serialization.Metadata;
 
 namespace {{packageName}}.{{clientPackage}}
 {
@@ -54,6 +55,8 @@ namespace {{packageName}}.{{clientPackage}}
             {{/isEnum}}
             {{/model}}
             {{/models}}
+            // DNV customization: Use default resolver to support AOT
+            _jsonOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
             JsonSerializerOptionsProvider jsonSerializerOptionsProvider = new{{^net60OrLater}} JsonSerializerOptionsProvider{{/net60OrLater}}(_jsonOptions);
             _services.AddSingleton(jsonSerializerOptionsProvider);
             {{#useSourceGeneration}}
@@ -82,6 +85,8 @@ namespace {{packageName}}.{{clientPackage}}
             _services.AddSingleton<IApiFactory, ApiFactory>();{{#apiInfo}}{{#apis}}
             _services.AddSingleton<{{classname}}Events>();
             _services.AddTransient<{{interfacePrefix}}{{classname}}, {{classname}}>();{{/apis}}{{/apiInfo}}
+            // DNV customization: Inject client name.
+            _services.AddTransient<{{interfacePrefix}}{{clientName}}, {{clientName}}>();
         }
 
         /// <summary>
@@ -101,6 +106,7 @@ namespace {{packageName}}.{{clientPackage}}
 
             {{#apiInfo}}{{#apis}}builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{classname}}, {{classname}}>(client));
             {{/apis}}{{/apiInfo}}
+            builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{clientName}}, {{clientName}}>(client));
             if (builder != null)
                 foreach (IHttpClientBuilder instance in builders)
                     builder(instance);
