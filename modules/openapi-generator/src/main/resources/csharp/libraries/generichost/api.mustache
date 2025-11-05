@@ -32,8 +32,6 @@ using {{packageName}}.{{modelPackage}};
 using System.Diagnostics.CodeAnalysis;
 {{/netStandard}}
 using {{packageName}}.{{package}};
-// DNV customization: Todo: Microsoft.Rest will be removed
-using Microsoft.Rest;
 
 namespace {{packageName}}.{{package}}
 {
@@ -61,12 +59,11 @@ namespace {{packageName}}.{{package}}
         /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}{{#isDeprecated}} (deprecated){{/isDeprecated}}</param>
         {{/allParams}}
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <param name="customHeaders">The headers that will be added to request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>&gt;</returns>
         {{#isDeprecated}}
         [Obsolete]
         {{/isDeprecated}}
-        Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}}, Dictionary<string, IList<string>>? customHeaders = null);
+        Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}});
 
         /// <summary>
         /// {{summary}}
@@ -83,26 +80,6 @@ namespace {{packageName}}.{{package}}
         [Obsolete]
         {{/isDeprecated}}
         Task<{{interfacePrefix}}{{operationId}}ApiResponse{{nrt?}}> {{operationId}}OrDefaultAsync({{>OperationSignature}});
-        // DNV customization: Add wrap methods for only returning dto
-        /// <summary>
-        /// {{summary}}
-        /// </summary>
-        /// <remarks>
-        /// {{notes}}
-        /// </remarks>
-        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
-        {{#allParams}}
-        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}{{#isDeprecated}} (deprecated){{/isDeprecated}}</param>
-        {{/allParams}}
-        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <param name="customHeaders">The headers that will be added to request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="HttpOperationResponse{{#returnType}}&lt;{{returnType}}&gt;{{/returnType}}"/>&gt;</returns>
-        {{#isDeprecated}}
-        [Obsolete]
-        {{/isDeprecated}}
-        Task<HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}> {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}WithHttpMessagesAsync(
-            {{>OperationSignature}},
-            Dictionary<string, IList<string>>? customHeaders = null);
 
         /// <summary>
         /// {{summary}}
@@ -414,9 +391,8 @@ namespace {{packageName}}
         /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <param name="customHeaders">The headers that will be added to request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>&gt;</returns>
-        public async Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}}, Dictionary<string, IList<string>>? customHeaders = null)
+        public async Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}})
         {
             {{#lambda.trimLineBreaks}}
             UriBuilder uriBuilderLocalVar = new UriBuilder();
@@ -533,15 +509,6 @@ namespace {{packageName}}
 
                     {{/required}}
                     {{/headerParams}}
-
-                    // DNV customization: Add custom headers
-                    if (customHeaders != null)
-                    {
-                        foreach (var header in customHeaders)
-                        {
-                            httpRequestMessageLocalVar.Headers.Add(header.Key, header.Value);
-                        }
-                    }
 
                     {{#formParams}}
                     {{#-first}}
@@ -697,13 +664,6 @@ namespace {{packageName}}
 
                     DateTime requestedAtLocalVar = DateTime.UtcNow;
 
-                    // DNV customization: Save request and response
-                    string requestContentLocalVar = string.Empty;
-                    if (httpRequestMessageLocalVar.Content != null)
-                    {
-                        requestContentLocalVar = await httpRequestMessageLocalVar.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        httpRequestMessageLocalVar.Content = new StringContent(requestContentLocalVar, System.Text.Encoding.UTF8, "application/json");
-                    }
                     using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
                     {
                         string responseContentLocalVar = string.Empty;
@@ -712,11 +672,7 @@ namespace {{packageName}}
                         }
                         if (!httpResponseMessageLocalVar.IsSuccessStatusCode)
                         {
-                            throw new HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode))
-                            {
-                                Request = new HttpRequestMessageWrapper(httpRequestMessageLocalVar, requestContentLocalVar),
-                                Response = new HttpResponseMessageWrapper(httpResponseMessageLocalVar, responseContentLocalVar)
-                            };
+                            throw new HttpOperationException(httpRequestMessageLocalVar, httpResponseMessageLocalVar, string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode));
                         }
 
                         ILogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse>();
@@ -915,54 +871,19 @@ namespace {{packageName}}
         public async Task{{#returnType}}<{{{returnType}}}>{{/returnType}} {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async(
             {{>OperationSignature}})
         {
-            // Call the WithHttpMessagesAsync method
-            {{#returnType}}var httpOperationResponse = {{/returnType}}await {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}WithHttpMessagesAsync(
-                {{#allParams}}
-                {{paramName}},
-                {{/allParams}}
-                cancellationToken,
-                null // customHeaders
-                ).ConfigureAwait(false);
-
-            {{#returnType}}
-            // Return the deserialized body
-            return httpOperationResponse.Body;
-            {{/returnType}}
-        }
-
-        /// <summary>
-        /// {{summary}}
-        /// </summary>
-        /// <remarks>
-        /// {{notes}}
-        /// </remarks>
-        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
-        {{#allParams}}
-        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
-        {{/allParams}}
-        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <param name="customHeaders">The headers that will be added to request.</param>
-        /// <returns><see cref="Task"/>{{#returnType}}&lt;<see cref="{{returnType}}"/>&gt;{{/returnType}}</returns>
-        public async Task<HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}> {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}WithHttpMessagesAsync(
-            {{>OperationSignature}},
-            Dictionary<string, IList<string>>? customHeaders = null)
-        {
-            // Call the WithHttpMessagesAsync method
             var apiResponse = await {{operationId}}NativeAsync(
                 {{#allParams}}
                 {{paramName}},
                 {{/allParams}}
-                cancellationToken,
-                customHeaders
+                cancellationToken
             ).ConfigureAwait(false);
 
-            return new HttpOperationResponse{{#returnType}}<{{{returnType}}}>{{/returnType}}
-            {
-                {{#returnType}}Body = JsonSerializer.Deserialize<{{{returnType}}}>(apiResponse.RawContent, _jsonSerializerOptions),{{/returnType}}
-                Request = apiResponse.Request,
-                Response = apiResponse.Response
-            };
+            {{#returnType}}
+            // Return the deserialized body
+            return JsonSerializer.Deserialize<{{{returnType}}}>(apiResponse.RawContent, _jsonSerializerOptions);
+            {{/returnType}}
         }
+
         {{/operation}}
     }
     {{/operations}}

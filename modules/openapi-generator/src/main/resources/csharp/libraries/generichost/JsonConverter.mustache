@@ -225,7 +225,7 @@
                         {{/isDateTime}}
                         {{#isEnum}}
                         {{^isMap}}
-                        // DNV customization: Handle enum by value
+                        // DNV customization (candidate): Handle enum by value
 /*
       "EnumByValue": {
         "enum": [
@@ -244,7 +244,7 @@
         ],
         "description": "\n\n100 - A\n\n200 - B"
       },*/
-                        {{#allowableValues}}{{#enumVars}}{{#-first}}{{#isString}}
+/*                        {{#allowableValues}}{{#enumVars}}{{#-first}}{{#isString}}
                         {{^isNumeric}}
                             string{{nrt?}} {{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}}RawValue = utf8JsonReader.GetString();
                             {{^isInnerEnum}}
@@ -258,7 +258,21 @@
                         {{/isNumeric}}
                         {{/isString}}{{#isNumeric}}
                             {{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}utf8JsonReader.TokenType == JsonTokenType.Null ? ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}}?)null : ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}})utf8JsonReader.Get{{#vendorExtensions.x-unsigned}}U{{/vendorExtensions.x-unsigned}}Int32());
-                        {{/isNumeric}}{{/-first}}{{/enumVars}}{{/allowableValues}}
+                        {{/isNumeric}}{{/-first}}{{/enumVars}}{{/allowableValues}}*/
+                        {{#isNumeric}}
+                            {{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}utf8JsonReader.TokenType == JsonTokenType.Null ? ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}}?)null : ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}})utf8JsonReader.Get{{#vendorExtensions.x-unsigned}}U{{/vendorExtensions.x-unsigned}}Int32());
+                        {{/isNumeric}}
+                        {{^isNumeric}}
+                            string{{nrt?}} {{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}RawValue = utf8JsonReader.GetString();
+                            {{^isInnerEnum}}
+                            if ({{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}RawValue != null)
+                                {{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}{{{datatypeWithEnum}}}ValueConverter.FromStringOrDefault({{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}RawValue));
+                            {{/isInnerEnum}}
+                            {{#isInnerEnum}}
+                            if ({{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}RawValue != null)
+                                {{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}{{classname}}.{{{datatypeWithEnum}}}FromStringOrDefault({{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}RawValue));
+                            {{/isInnerEnum}}
+                        {{/isNumeric}}
                         {{/isMap}}
                         {{/isEnum}}
                         {{#isUuid}}

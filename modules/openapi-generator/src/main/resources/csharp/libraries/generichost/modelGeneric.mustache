@@ -89,6 +89,48 @@
             OnCreated();
         }
 
+        /// <summary>
+        /// Second constructor (without Option-ed parameters) of the <see cref="{{classname}}" /> class.
+        /// </summary>
+        {{#composedSchemas.anyOf}}
+        /// <param name="{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}"></param>
+        {{/composedSchemas.anyOf}}
+        {{#allVars}}
+        {{^isDiscriminator}}
+        /// <param name="{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}">{{description}}{{^description}}{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}{{/description}}{{#defaultValue}} (default to {{.}}){{/defaultValue}}</param>
+        {{/isDiscriminator}}
+        {{/allVars}}
+        /// <param name="dummy">dummy to avoid duplicated ctors</param>
+        {{^composedSchemas.anyOf}}
+        [JsonConstructor]
+        {{/composedSchemas.anyOf}}
+        {{#model.vendorExtensions.x-model-is-mutable}}{{>visibility}}{{/model.vendorExtensions.x-model-is-mutable}}{{^model.vendorExtensions.x-model-is-mutable}}internal{{/model.vendorExtensions.x-model-is-mutable}} {{classname}}({{#lambda.joinWithComma}}{{#composedSchemas.anyOf}}{{{baseType}}}{{>NullConditionalProperty}} {{#lambda.escape_reserved_word}}{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}{{/lambda.escape_reserved_word}}  {{/composedSchemas.anyOf}}{{#model.allVars}}{{^isDiscriminator}}{{{datatypeWithEnum}}}{{>NullConditionalProperty}} {{#lambda.escape_reserved_word}}{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}{{/lambda.escape_reserved_word}}  {{/isDiscriminator}}{{/model.allVars}}{{/lambda.joinWithComma}}, bool dummy = true){{#parent}} : base({{#lambda.joinWithComma}}{{>ModelBaseSignature}}{{/lambda.joinWithComma}}){{/parent}}
+        {
+            {{#composedSchemas.anyOf}}
+            {{#lambda.titlecase}}{{name}}{{/lambda.titlecase}} = {{#lambda.escape_reserved_word}}{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}{{/lambda.escape_reserved_word}};
+            {{/composedSchemas.anyOf}}
+            {{#allVars}}
+            {{^isDiscriminator}}
+            {{^isInherited}}
+            {{name}} = {{#lambda.escape_reserved_word}}{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}{{/lambda.escape_reserved_word}};
+            {{/isInherited}}
+            {{#isInherited}}
+            {{#isNew}}
+            {{name}} = {{#lambda.escape_reserved_word}}{{#lambda.camel_case}}{{name}}{{/lambda.camel_case}}{{/lambda.escape_reserved_word}};
+            {{/isNew}}
+            {{/isInherited}}
+            {{/isDiscriminator}}
+            {{#vendorExtensions.x-is-base-or-new-discriminator}}
+            {{^model.composedSchemas.anyOf}}
+            {{^model.composedSchemas.oneOf}}
+            {{name}} = {{^isEnum}}this.GetType().Name{{/isEnum}}{{#isEnum}}({{datatypeWithEnum}})Enum.Parse(typeof({{datatypeWithEnum}}), this.GetType().Name){{/isEnum}};
+            {{/model.composedSchemas.oneOf}}
+            {{/model.composedSchemas.anyOf}}
+            {{/vendorExtensions.x-is-base-or-new-discriminator}}
+            {{/allVars}}
+            OnCreated();
+        }
+
         {{/composedSchemas.oneOf}}
         partial void OnCreated();
 
