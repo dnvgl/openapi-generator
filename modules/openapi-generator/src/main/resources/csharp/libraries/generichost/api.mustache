@@ -114,11 +114,6 @@ namespace {{packageName}}.{{package}}
     /// </summary>
     {{>visibility}} interface {{interfacePrefix}}{{operationId}}ApiResponse : {{#lambda.joinWithComma}}{{packageName}}.{{clientPackage}}.{{interfacePrefix}}ApiResponse  {{#responses}}{{#dataType}}{{interfacePrefix}}{{vendorExtensions.x-http-status}}<{{#isModel}}{{^containerType}}{{packageName}}.{{modelPackage}}.{{/containerType}}{{/isModel}}{{{dataType}}}{{#nrt}}?{{/nrt}}{{^nrt}}{{#vendorExtensions.x-is-value-type}}?{{/vendorExtensions.x-is-value-type}}{{/nrt}}>  {{/dataType}}{{/responses}}{{/lambda.joinWithComma}}
     {
-        // DNV customization: 
-        HttpRequestMessage Request { get; }
-
-        HttpResponseMessage Response { get; }
-
         {{#responses}}
         {{#vendorExtensions.x-http-status-is-default}}
         /// <summary>
@@ -509,7 +504,6 @@ namespace {{packageName}}
 
                     {{/required}}
                     {{/headerParams}}
-
                     {{#formParams}}
                     {{#-first}}
                     MultipartContent multipartContentLocalVar = new MultipartContent();
@@ -749,9 +743,6 @@ namespace {{packageName}}
             /// The logger
             /// </summary>
             public ILogger<{{operationId}}ApiResponse> Logger { get; }
-            public HttpRequestMessage Request { get; }
-
-            public HttpResponseMessage Response { get; }
 
             /// <summary>
             /// The <see cref="{{operationId}}ApiResponse"/>
@@ -766,8 +757,6 @@ namespace {{packageName}}
             public {{operationId}}ApiResponse(ILogger<{{operationId}}ApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
             {
                 Logger = logger;
-                Request = httpRequestMessage;
-                Response = httpResponseMessage;
                 OnCreated(httpRequestMessage, httpResponseMessage);
             }
 

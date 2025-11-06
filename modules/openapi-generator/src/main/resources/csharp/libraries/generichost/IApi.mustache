@@ -27,12 +27,9 @@ namespace {{packageName}}.{{apiPackage}}
     /// </summary>
     public partial interface {{interfacePrefix}}{{clientName}}
     {
-		JsonSerializerOptionsProvider JsonSerializerOptionsProvider { get; }
-
 {{#apiInfo.apis}}
         {{interfacePrefix}}{{classname}} {{classname}} { get; }
 {{/apiInfo.apis}}
-
     }
 }
 
@@ -41,7 +38,7 @@ namespace {{packageName}}
     public class {{clientName}} : {{interfacePrefix}}{{clientName}}
     {
         public HttpClient HttpClient { get; }
-		public JsonSerializerOptionsProvider JsonSerializerOptionsProvider { get; private set; }
+        public JsonSerializerOptionsProvider JsonSerializerOptionsProvider { get; private set; }
 {{#apiInfo.apis}}
         {{>visibility}} virtual {{interfacePrefix}}{{classname}} {{classname}} { get; private set; }
 {{/apiInfo.apis}}
@@ -83,6 +80,5 @@ namespace {{packageName}}
             {{classname}} = new {{classname}}(loggerFactory.CreateLogger<{{classname}}>(), loggerFactory, httpClient, JsonSerializerOptionsProvider, new {{classname}}Events());
 {{/apiInfo.apis}}
         }
-
     }
 }
