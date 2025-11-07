@@ -32,6 +32,8 @@ using {{packageName}}.{{modelPackage}};
 using System.Diagnostics.CodeAnalysis;
 {{/netStandard}}
 using {{packageName}}.{{package}};
+// DNV customization: Todo: Microsoft.Rest will be removed
+using Microsoft.Rest;
 
 namespace {{packageName}}.{{package}}
 {
@@ -658,6 +660,13 @@ namespace {{packageName}}
 
                     DateTime requestedAtLocalVar = DateTime.UtcNow;
 
+                    // DNV customization: Save request and response
+                    string requestContentLocalVar = string.Empty;
+                    if (httpRequestMessageLocalVar.Content != null)
+                    {
+                        requestContentLocalVar = await httpRequestMessageLocalVar.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        httpRequestMessageLocalVar.Content = new StringContent(requestContentLocalVar, System.Text.Encoding.UTF8, "application/json");
+                    }
                     using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
                     {
                         string responseContentLocalVar = string.Empty;
@@ -666,7 +675,11 @@ namespace {{packageName}}
                         }
                         if (!httpResponseMessageLocalVar.IsSuccessStatusCode)
                         {
-                            throw new HttpOperationException(httpRequestMessageLocalVar, httpResponseMessageLocalVar, string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode));
+                            throw new HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode))
+                            {
+                                Request = new HttpRequestMessageWrapper(httpRequestMessageLocalVar, requestContentLocalVar),
+                                Response = new HttpResponseMessageWrapper(httpResponseMessageLocalVar, responseContentLocalVar)
+                            };
                         }
 
                         ILogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse>();
