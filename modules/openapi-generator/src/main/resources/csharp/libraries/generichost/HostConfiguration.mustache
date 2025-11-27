@@ -85,7 +85,7 @@ namespace {{packageName}}.{{clientPackage}}
             _services.AddSingleton<IApiFactory, ApiFactory>();{{#apiInfo}}{{#apis}}
             _services.AddSingleton<{{classname}}Events>();
             _services.AddTransient<{{interfacePrefix}}{{classname}}, {{classname}}>();{{/apis}}{{/apiInfo}}
-            // DNV customization: Inject client name.
+            // DNV customization: Inject api client object.
             _services.AddTransient<{{interfacePrefix}}{{clientName}}, {{clientName}}>();
         }
 
@@ -93,20 +93,31 @@ namespace {{packageName}}.{{clientPackage}}
         /// Configures the HttpClients.
         /// </summary>
         /// <param name="client"></param>
+        /// <param name="name"></param>
         /// <param name="builder"></param>
         /// <returns></returns>
-        public HostConfiguration Add{{apiName}}HttpClients
-        (
-            Action<HttpClient>{{nrt?}} client = null, Action<IHttpClientBuilder>{{nrt?}} builder = null)
+        public HostConfiguration Add{{apiName}}HttpClients(
+            Action<HttpClient>{{nrt?}} client = null, string? name = null, Action<IHttpClientBuilder>{{nrt?}} builder = null)
         {
             if (client == null)
                 client = c => c.BaseAddress = new Uri(ClientUtils.BASE_ADDRESS);
 
             List<IHttpClientBuilder> builders = new List<IHttpClientBuilder>();
 
-            {{#apiInfo}}{{#apis}}builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{classname}}, {{classname}}>(client));
-            {{/apis}}{{/apiInfo}}
-            builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{clientName}}, {{clientName}}>(client));
+            // DNV customization: Add Http client for api client
+            // DNV customization: Add name for http client
+            if (!string.IsNullOrEmpty(name))
+            {
+                {{#apiInfo}}{{#apis}}builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{classname}}, {{classname}}>(name, client));
+                {{/apis}}{{/apiInfo}}
+                builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{clientName}}, {{clientName}}>(name, client));
+            }
+            else
+            {
+                {{#apiInfo}}{{#apis}}builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{classname}}, {{classname}}>(client));
+                {{/apis}}{{/apiInfo}}
+                builders.Add(_services.AddHttpClient<{{interfacePrefix}}{{clientName}}, {{clientName}}>(client));
+            }
             if (builder != null)
                 foreach (IHttpClientBuilder instance in builders)
                     builder(instance);

@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using Microsoft.Extensions.Logging;
 using {{packageName}}.{{clientPackage}};
 using {{packageName}}.{{apiPackage}};
 using {{packageName}}.{{modelPackage}};
@@ -44,9 +41,12 @@ namespace {{packageName}}
 {{/apiInfo.apis}}
 
         public {{clientName}}(
-            HttpClient httpClient, bool dummy = true, JsonSerializerOptionsProvider? jsonSerializerOptionsProvider = null) 
+            HttpClient httpClient, {{#apiInfo.apis}}{{interfacePrefix}}{{classname}} {{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}}, {{/apiInfo.apis}}JsonSerializerOptionsProvider? jsonSerializerOptionsProvider = null) 
         {
             HttpClient = httpClient;
+{{#apiInfo.apis}}
+            {{classname}} = {{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}};
+{{/apiInfo.apis}}
             if (jsonSerializerOptionsProvider != null)
             {
                 JsonSerializerOptionsProvider = jsonSerializerOptionsProvider;
@@ -75,10 +75,6 @@ namespace {{packageName}}
                 jsonSerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
                 JsonSerializerOptionsProvider = new JsonSerializerOptionsProvider(jsonSerializerOptions);
             }
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-{{#apiInfo.apis}}
-            {{classname}} = new {{classname}}(loggerFactory.CreateLogger<{{classname}}>(), loggerFactory, httpClient, JsonSerializerOptionsProvider, new {{classname}}Events());
-{{/apiInfo.apis}}
         }
     }
 }

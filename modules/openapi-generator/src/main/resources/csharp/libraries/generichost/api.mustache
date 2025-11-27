@@ -65,6 +65,7 @@ namespace {{packageName}}.{{package}}
         {{#isDeprecated}}
         [Obsolete]
         {{/isDeprecated}}
+        // DNV customization: Original method name is renamed as ~NativeAsync() to avoid naming conflict
         Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}});
 
         /// <summary>
@@ -83,6 +84,7 @@ namespace {{packageName}}.{{package}}
         {{/isDeprecated}}
         Task<{{interfacePrefix}}{{operationId}}ApiResponse{{nrt?}}> {{operationId}}OrDefaultAsync({{>OperationSignature}});
 
+        // DNV customization: Add {{operationId}}Async to return response DTO
         /// <summary>
         /// {{summary}}
         /// </summary>
@@ -460,12 +462,15 @@ namespace {{packageName}}
                     {{/required}}
                     // DNV customization: non-required parameters are of type Option
                     {{#isArray}}
-                    foreach (var item in {{paramName}}{{^required}}.Value{{/required}})
+                    if ({{paramName}}{{#required}} != null{{/required}}{{^required}}.IsSet{{/required}})
                     {
-                        var value = ClientUtils.ParameterToString(item);
-                        if (!string.IsNullOrEmpty(value))
+                        foreach (var item in {{paramName}}{{^required}}.Value{{/required}})
                         {
-                            parseQueryStringLocalVar["{{baseName}}"] = value;
+                            var value = ClientUtils.ParameterToString(item);
+                            if (!string.IsNullOrEmpty(value))
+                            {
+                                parseQueryStringLocalVar["{{baseName}}"] = value;
+                            }
                         }
                     }
                     {{/isArray}}
@@ -673,6 +678,7 @@ namespace {{packageName}}
                         if (httpResponseMessageLocalVar.Content != null) {
                             responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync({{#net60OrLater}}cancellationToken{{/net60OrLater}}).ConfigureAwait(false);
                         }
+                        // DNV customization: Throw HttpOperationException for non-successful responses
                         if (!httpResponseMessageLocalVar.IsSuccessStatusCode)
                         {
                             throw new HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode))
