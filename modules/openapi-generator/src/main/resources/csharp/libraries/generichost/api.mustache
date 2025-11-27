@@ -31,8 +31,11 @@ using {{packageName}}.{{modelPackage}};
 {{^netStandard}}
 using System.Diagnostics.CodeAnalysis;
 {{/netStandard}}
+using {{packageName}}.{{package}};
+// DNV customization: Todo: Microsoft.Rest will be removed
+using Microsoft.Rest;
 
-namespace {{packageName}}.{{apiPackage}}
+namespace {{packageName}}.{{package}}
 {
     {{#operations}}
     /// <summary>
@@ -62,7 +65,8 @@ namespace {{packageName}}.{{apiPackage}}
         {{#isDeprecated}}
         [Obsolete]
         {{/isDeprecated}}
-        Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}Async({{>OperationSignature}});
+        // DNV customization: Original method name is renamed as ~NativeAsync() to avoid naming conflict
+        Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}});
 
         /// <summary>
         /// {{summary}}
@@ -79,6 +83,26 @@ namespace {{packageName}}.{{apiPackage}}
         [Obsolete]
         {{/isDeprecated}}
         Task<{{interfacePrefix}}{{operationId}}ApiResponse{{nrt?}}> {{operationId}}OrDefaultAsync({{>OperationSignature}});
+
+        // DNV customization: Add {{operationId}}Async to return response DTO
+        /// <summary>
+        /// {{summary}}
+        /// </summary>
+        /// <remarks>
+        /// {{notes}}
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        {{#allParams}}
+        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}{{#isDeprecated}} (deprecated){{/isDeprecated}}</param>
+        {{/allParams}}
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>{{#returnType}}&lt;<see cref="{{returnType}}"/>&gt;{{/returnType}}</returns>
+        {{#isDeprecated}}
+        [Obsolete]
+        {{/isDeprecated}}
+        Task{{#returnType}}<{{{returnType}}}>{{/returnType}} {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async(
+            {{>OperationSignature}});
+
         {{^-last}}
 
         {{/-last}}
@@ -149,6 +173,14 @@ namespace {{packageName}}.{{apiPackage}}
         {{/operation}}
         {{/lambda.trimTrailingWithNewLine}}
     }
+    
+    {{/operations}}
+}
+
+// DNV customization: Separate interfaces for implementation
+namespace {{packageName}}
+{
+    {{#operations}}
 
     /// <summary>
     /// Represents a collection of functions to interact with the API endpoints
@@ -342,7 +374,7 @@ namespace {{packageName}}.{{apiPackage}}
         {
             try
             {
-                return await {{operationId}}Async({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}}{{#allParams.0}}, {{/allParams.0}}cancellationToken).ConfigureAwait(false);
+                return await {{operationId}}NativeAsync({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}}{{#allParams.0}}, {{/allParams.0}}cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -359,7 +391,7 @@ namespace {{packageName}}.{{apiPackage}}
         {{/allParams}}
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="{{interfacePrefix}}{{operationId}}ApiResponse"/>&gt;</returns>
-        public async Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}Async({{>OperationSignature}})
+        public async Task<{{interfacePrefix}}{{operationId}}ApiResponse> {{operationId}}NativeAsync({{>OperationSignature}})
         {
             {{#lambda.trimLineBreaks}}
             UriBuilder uriBuilderLocalVar = new UriBuilder();
@@ -427,8 +459,27 @@ namespace {{packageName}}.{{apiPackage}}
                     {{#-first}}
 
                     {{/-first}}
-                    parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}});
                     {{/required}}
+                    // DNV customization: non-required parameters are of type Option
+                    {{#isArray}}
+                    if ({{paramName}}{{#required}} != null{{/required}}{{^required}}.IsSet{{/required}})
+                    {
+                        foreach (var item in {{paramName}}{{^required}}.Value{{/required}})
+                        {
+                            var value = ClientUtils.ParameterToString(item);
+                            if (!string.IsNullOrEmpty(value))
+                            {
+                                parseQueryStringLocalVar["{{baseName}}"] = value;
+                            }
+                        }
+                    }
+                    {{/isArray}}
+                    {{^isArray}}
+                    {{^required}}if ({{paramName}}.IsSet){{/required}}
+                    {
+                        parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}}{{^required}}.Value{{/required}});
+                    }                    
+                    {{/isArray}}
                     {{/queryParams}}
 
                     {{#constantParams}}
@@ -438,11 +489,6 @@ namespace {{packageName}}.{{apiPackage}}
                     {{/isQueryParam}}
                     {{/constantParams}}
                     {{#queryParams}}
-                    {{^required}}
-                    if ({{paramName}}.IsSet)
-                        parseQueryStringLocalVar["{{baseName}}"] = ClientUtils.ParameterToString({{paramName}}.Value);
-
-                    {{/required}}
                     {{#-last}}
                     uriBuilderLocalVar.Query = parseQueryStringLocalVar.ToString();
 
@@ -619,9 +665,28 @@ namespace {{packageName}}.{{apiPackage}}
 
                     DateTime requestedAtLocalVar = DateTime.UtcNow;
 
+                    // DNV customization: Save request and response
+                    string requestContentLocalVar = string.Empty;
+                    if (httpRequestMessageLocalVar.Content != null)
+                    {
+                        requestContentLocalVar = await httpRequestMessageLocalVar.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        httpRequestMessageLocalVar.Content = new StringContent(requestContentLocalVar, System.Text.Encoding.UTF8, "application/json");
+                    }
                     using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
                     {
-                        string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync({{#net60OrLater}}cancellationToken{{/net60OrLater}}).ConfigureAwait(false);
+                        string responseContentLocalVar = string.Empty;
+                        if (httpResponseMessageLocalVar.Content != null) {
+                            responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync({{#net60OrLater}}cancellationToken{{/net60OrLater}}).ConfigureAwait(false);
+                        }
+                        // DNV customization: Throw HttpOperationException for non-successful responses
+                        if (!httpResponseMessageLocalVar.IsSuccessStatusCode)
+                        {
+                            throw new HttpOperationException(string.Format("Operation returned an invalid status code '{0}'", httpResponseMessageLocalVar.StatusCode))
+                            {
+                                Request = new HttpRequestMessageWrapper(httpRequestMessageLocalVar, requestContentLocalVar),
+                                Response = new HttpResponseMessageWrapper(httpResponseMessageLocalVar, responseContentLocalVar)
+                            };
+                        }
 
                         ILogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<{{#vendorExtensions.x-duplicates}}{{.}}.{{/vendorExtensions.x-duplicates}}{{operationId}}ApiResponse>();
 
@@ -798,6 +863,35 @@ namespace {{packageName}}.{{apiPackage}}
         {{/-first}}
         {{/responses}}
         {{/vendorExtensions.x-duplicates}}
+                
+        /// <summary>
+        /// {{summary}}
+        /// </summary>
+        /// <remarks>
+        /// {{notes}}
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        {{#allParams}}
+        /// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
+        {{/allParams}}
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>{{#returnType}}&lt;<see cref="{{returnType}}"/>&gt;{{/returnType}}</returns>
+        public async Task{{#returnType}}<{{{returnType}}}>{{/returnType}} {{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async(
+            {{>OperationSignature}})
+        {
+            var apiResponse = await {{operationId}}NativeAsync(
+                {{#allParams}}
+                {{paramName}},
+                {{/allParams}}
+                cancellationToken
+            ).ConfigureAwait(false);
+
+            {{#returnType}}
+            // Return the deserialized body
+            return JsonSerializer.Deserialize<{{{returnType}}}>(apiResponse.RawContent, _jsonSerializerOptions);
+            {{/returnType}}
+        }
+
         {{/operation}}
     }
     {{/operations}}

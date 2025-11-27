@@ -209,6 +209,14 @@ using System.Runtime.CompilerServices;
                     entries.Add(ParameterToString(entry));
                 return string.Join(",", entries);
             }
+            // DNV customization: Add parameter type IEnumerable
+            else if (obj is IEnumerable enumerable)
+            {
+                List<string{{nrt?}}> entries = new{{^net70OrLater}} List<string{{nrt?}}>{{/net70OrLater}}();
+                foreach (var entry in enumerable)
+                    entries.Add(ParameterToString(entry));
+                return string.Join(",", entries);
+            }
 
             return Convert.ToString(obj, System.Globalization.CultureInfo.InvariantCulture);
         }

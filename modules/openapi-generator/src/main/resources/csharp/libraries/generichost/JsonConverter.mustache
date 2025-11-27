@@ -225,6 +225,40 @@
                         {{/isDateTime}}
                         {{#isEnum}}
                         {{^isMap}}
+                        // DNV customization (candidate): Handle enum by value
+/*
+      "EnumByValue": {
+        "enum": [
+          100,
+          200
+        ],
+        "type": "integer",
+        "format": "int32",
+        "x-enum-descriptions": [
+          "",
+          ""
+        ],
+        "x-enum-varnames": [
+          "A",
+          "B"
+        ],
+        "description": "\n\n100 - A\n\n200 - B"
+      },*/
+/*                        {{#allowableValues}}{{#enumVars}}{{#-first}}{{#isString}}
+                        {{^isNumeric}}
+                            string{{nrt?}} {{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}}RawValue = utf8JsonReader.GetString();
+                            {{^isInnerEnum}}
+                            if ({{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}}RawValue != null)
+                                {{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}{{{datatypeWithEnum}}}ValueConverter.FromStringOrDefault({{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}}RawValue));
+                            {{/isInnerEnum}}
+                            {{#isInnerEnum}}
+                            if ({{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}}RawValue != null)
+                                {{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}{{classname}}.{{{datatypeWithEnum}}}FromStringOrDefault({{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}}RawValue));
+                            {{/isInnerEnum}}
+                        {{/isNumeric}}
+                        {{/isString}}{{#isNumeric}}
+                            {{#lambda.camelcase_sanitize_param}}{{baseName}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}utf8JsonReader.TokenType == JsonTokenType.Null ? ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}}?)null : ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}})utf8JsonReader.Get{{#vendorExtensions.x-unsigned}}U{{/vendorExtensions.x-unsigned}}Int32());
+                        {{/isNumeric}}{{/-first}}{{/enumVars}}{{/allowableValues}}*/
                         {{#isNumeric}}
                             {{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}} = {{>OptionProperty}}utf8JsonReader.TokenType == JsonTokenType.Null ? ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}}?)null : ({{#isInnerEnum}}{{classname}}.{{/isInnerEnum}}{{{datatypeWithEnum}}})utf8JsonReader.Get{{#vendorExtensions.x-unsigned}}U{{/vendorExtensions.x-unsigned}}Int32());
                         {{/isNumeric}}
@@ -338,9 +372,7 @@
         public override void Write(Utf8JsonWriter writer, {{classname}} {{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}}, JsonSerializerOptions jsonSerializerOptions)
         {
             {{#lambda.trimLineBreaks}}
-            {{#lambda.copyText}}
-            {{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}}
-            {{/lambda.copyText}}
+            {{#lambda.copyText}}{{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}}{{/lambda.copyText}}
             {{#discriminator}}
             {{#children}}
             if ({{#lambda.paste}}{{/lambda.paste}} is {{classname}} {{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}}){
@@ -520,9 +552,7 @@
             {{/isNullable}}
             {{/isInnerEnum}}
             {{^isInnerEnum}}
-            {{#lambda.copyText}}
-            {{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}
-            {{/lambda.copyText}}
+            {{#lambda.copyText}}{{#lambda.camelcase_sanitize_param}}{{name}}{{/lambda.camelcase_sanitize_param}}{{/lambda.copyText}}
             {{#required}}
             {{#isNullable}}
             if ({{#lambda.camelcase_sanitize_param}}{{classname}}{{/lambda.camelcase_sanitize_param}}.{{name}} == null)

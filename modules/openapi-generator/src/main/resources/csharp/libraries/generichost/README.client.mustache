@@ -50,9 +50,8 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using {{packageName}}.Api;
-using {{packageName}}.Client;
-using {{packageName}}.Model;
+using {{packageName}}.Extensions;
+using {{packageName}}.Interfaces;
 
 namespace YourProject
 {
@@ -61,13 +60,13 @@ namespace YourProject
         public static async Task Main(string[] args)
         {
             var host = CreateHostBuilder(args).Build();{{#apiInfo}}{{#apis}}{{#-first}}
-            var api = host.Services.GetRequiredService<{{interfacePrefix}}{{classname}}>();
+            var api = host.Services.GetRequiredService<{{interfacePrefix}}{{clientName}}>();
             {{#operations}}
             {{#-first}}
             {{#operation}}
             {{#-first}}
-            {{operationId}}ApiResponse apiResponse = await api.{{operationId}}Async("todo");
-            {{#returnType}}{{{.}}}{{/returnType}}{{^returnType}}object{{/returnType}} model = apiResponse.Ok();
+            var apiResponse = await api.{{baseName}}.{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}Async("todo");
+            Console.WriteLine($"Response: {apiResponse.ToString()}");
             {{/-first}}
             {{/operation}}
             {{/-first}}
@@ -78,7 +77,7 @@ namespace YourProject
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)
-          .Configure{{apiName}}((context, options) =>
+          .Configure{{apiName}}((context, services, options) =>
           {
               {{#authMethods}}
               {{#-first}}
@@ -96,7 +95,9 @@ namespace YourProject
                   // your custom converters if any
               });
 
-              options.Add{{apiName}}HttpClients(builder: builder => builder
+              options.Add{{apiName}}HttpClients(
+                client: client => client.BaseAddress = new Uri(context.Configuration["ApiSettings:BaseAddress"]),
+                builder: builder => builder
                 .AddRetryPolicy(2)
                 .AddTimeoutPolicy(TimeSpan.FromSeconds(5))
                 .AddCircuitBreakerPolicy(10, TimeSpan.FromSeconds(30))
@@ -138,7 +139,7 @@ All URIs are relative to *{{{basePath}}}*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------{{#apiInfo}}{{#apis}}{{#operations}}{{#operation}}
-*{{classname}}* | [**{{operationId}}**]({{apiDocPath}}{{classname}}.md#{{operationIdLowerCase}}) | **{{httpMethod}}** {{path}} | {{#summary}}{{{summary}}}{{/summary}}{{/operation}}{{/operations}}{{/apis}}{{/apiInfo}}{{/apiDocs}}{{#modelDocs}}
+*{{classname}}* | [**{{#vendorExtensions.x-csharp-operationId}}{{vendorExtensions.x-csharp-operationId}}{{/vendorExtensions.x-csharp-operationId}}{{^vendorExtensions.x-csharp-operationId}}{{operationId}}{{/vendorExtensions.x-csharp-operationId}}**]({{apiDocPath}}{{classname}}.md#{{operationIdLowerCase}}) | **{{httpMethod}}** {{path}} | {{#summary}}{{{summary}}}{{/summary}}{{/operation}}{{/operations}}{{/apis}}{{/apiInfo}}{{/apiDocs}}{{#modelDocs}}
 
 <a id="documentation-for-models"></a>
 ## Documentation for Models
